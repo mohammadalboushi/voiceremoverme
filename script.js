@@ -195,7 +195,7 @@ window.startProcessing = async function() {
   document.getElementById('processBtn').disabled = true;
   document.getElementById('progressSection').classList.add('show');
   document.getElementById('resultsSection').classList.remove('show');
-  document.getElementById('progressStatus').innerText = 'جاري الاتصال ورفع الملف...';
+  document.getElementById('progressStatus').innerText = 'جاري الاتصال بالسيرفر...';
 
   let p = 0;
   let simInterval = setInterval(() => {
@@ -210,7 +210,17 @@ window.startProcessing = async function() {
   }, 300);
 
   try {
-    const client = await Client.connect("TheStinger/UVR5_UI");
+    // جلب رابط كولاب الخاص بك من فايربيس
+    const configRes = await fetch("https://malaboushi-default-rtdb.firebaseio.com/colabConfig.json");
+    const configData = await configRes.json();
+    
+    if (!configData || !configData.currentUrl) {
+      throw new Error("لا يوجد رابط سيرفر مسجل في لوحة التحكم");
+    }
+
+    const serverUrl = configData.currentUrl.trim();
+
+    const client = await Client.connect(serverUrl);
     const result = await client.predict("/vrarch_separator", {
       audio: currentFile,
       model: "6_HP-Karaoke-UVR.pth",
@@ -231,7 +241,7 @@ window.startProcessing = async function() {
     document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
     updateProcessing(100);
 
-    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? "https://thestinger-uvr5-ui.hf.space/file=" + i.path : ''));
+    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? serverUrl + (serverUrl.endsWith('/') ? '' : '/') + "file=" + i.path : ''));
     document.getElementById('instAudio').src = getUrl(result.data[0]);
     document.getElementById('vocalAudio').src = getUrl(result.data[1]);
 
@@ -245,7 +255,7 @@ window.startProcessing = async function() {
     }, 1000);
   } catch (err) {
     clearInterval(simInterval);
-    showToast('وصلت للحد الأقصى! شغل الـ VPN وأعد المحاولة.', 'error');
+    showToast('حدث خطأ بالاتصال بالسيرفر، تأكد من تشغيل كولاب.', 'error');
     document.getElementById('processBtn').disabled = false;
     document.getElementById('progressSection').classList.remove('show');
   }

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم MohaMmAD_WaSSouF</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: #121212; 
+            color: #ffffff; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+        .admin-card { 
+            background: #1e1e1e; 
+            padding: 30px 20px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        h2 { 
+            text-align: center; 
+            margin-top: 0;
+            margin-bottom: 25px; 
+            font-size: 1.4rem; 
+            color: #00e676; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-size: 0.9rem; 
+            color: #aaaaaa; 
+        }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            border: 1px solid #333333; 
+            border-radius: 10px; 
+            background: #2a2a2a; 
+            color: #ffffff; 
+            box-sizing: border-box; 
+            text-align: left; 
+            direction: ltr; 
+            font-family: monospace; 
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus { 
+            outline: none; 
+            border-color: #00e676; 
+        }
+        input[readonly] { 
+            color: #888888; 
+            background: #1a1a1a; 
+            border-color: #222222; 
+        }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: #00e676; 
+            color: #000000; 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        button:active { 
+            transform: scale(0.97); 
+            background: #00c853; 
+        }
+        button:disabled {
+            background: #555555;
+            color: #888888;
+            transform: none;
+        }
+        .status-msg { 
+            text-align: center; 
+            margin-top: 20px; 
+            font-size: 1rem; 
+            font-weight: bold; 
+            min-height: 24px; 
+            transition: opacity 0.3s ease; 
+            opacity: 0; 
+        }
+        .status-msg.success { color: #00e676; opacity: 1; }
+        .status-msg.error { color: #ff5252; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-card">
+        <h2>لوحة تحكم MohaMmAD_WaSSouF</h2>
+        
+        <div class="form-group">
+            <label>الرابط الحالي للسيرفر:</label>
+            <input type="text" id="currentLink" readonly placeholder="جاري الاتصال بقاعدة البيانات...">
+        </div>
+        
+        <div class="form-group">
+            <label>رابط Google Colab الجديد:</label>
+            <input type="url" id="newLink" placeholder="https://...">
+        </div>
+        
+        <button onclick="updateLink()" id="updateBtn">تحديث الرابط</button>
+        
+        <div id="statusMsg" class="status-msg"></div>
+    </div>
+
+    <script>
+        // تم ربطها بقاعدة بيانات malaboushi
+        const dbUrl = "https://malaboushi-default-rtdb.firebaseio.com/colabConfig.json";
+
+        async function fetchCurrentLink() {
+            try {
+                const res = await fetch(dbUrl);
+                const data = await res.json();
+                if(data && data.currentUrl) {
+                    document.getElementById('currentLink').value = data.currentUrl;
+                } else {
+                    document.getElementById('currentLink').value = "لا يوجد رابط مسجل حالياً";
+                }
+            } catch (error) {
+                showNotification("فشل جلب الرابط من فايربيس", "error");
+            }
+        }
+
+        async function updateLink() {
+            const newUrl = document.getElementById('newLink').value.trim();
+            
+            if(!newUrl) {
+                showNotification("الرجاء إدخال الرابط الجديد أولاً", "error");
+                return;
+            }
+
+            const btn = document.getElementById('updateBtn');
+            btn.innerText = "جاري التحديث...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(dbUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentUrl: newUrl })
+                });
+
+                if(res.ok) {
+                    document.getElementById('currentLink').value = newUrl;
+                    document.getElementById('newLink').value = "";
+                    showNotification("تم تحديث الرابط بنجاح!", "success");
+                } else {
+                    showNotification("حدث خطأ أثناء التحديث", "error");
+                }
+            } catch (error) {
+                showNotification("فشل الاتصال بالإنترنت أو قاعدة البيانات", "error");
+            } finally {
+                btn.innerText = "تحديث الرابط";
+                btn.disabled = false;
+            }
+        }
+
+        function showNotification(text, type) {
+            const msgDiv = document.getElementById('statusMsg');
+            msgDiv.textContent = text;
+            msgDiv.className = "status-msg " + type;
+            
+            setTimeout(() => {
+                msgDiv.className = "status-msg";
+            }, 3000);
+        }
+
+        window.onload = fetchCurrentLink;
+    </script>
+</body>
+</html>

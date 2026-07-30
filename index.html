@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><link rel="manifest" href="manifest.json">
+
+  <meta name="description" content="وصف موقعك لمحركات البحث يكتب هنا.">
+  <meta name="keywords" content="كلمات, مفتاحية, عن, الموقع">
+  <meta name="author" content="اسم المطور">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://yourdomain.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/">
+  <meta property="og:title" content="AI Voice Studio Pro - منصة فصل الصوت الذكية">
+  <meta property="og:description" content="وصف الموقع الذي يظهر عند مشاركة الرابط.">
+  <meta property="og:image" content="icon-512.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ar_AR">
+  <meta property="og:site_name" content="AI Voice Studio Pro - منصة فصل الصوت الذكية">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AI Voice Studio Pro - منصة فصل الصوت الذكية">
+  <meta name="twitter:description" content="وصف خاص يظهر على منصة تويتر.">
+  <meta name="twitter:image" content="icon-512.png">
+
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Voice Studio Pro - منصة فصل الصوت الذكية</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Cairo:wght@400;600;700;900&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="logo">
+        <i class="fas fa-music"></i>
+        Voice Studio AI
+      </div>
+      <div class="nav-links">
+        <a href="#" class="nav-link" onclick="showPage('home')">الرئيسية</a>
+        <a href="#" class="nav-link" onclick="showPage('history')">السجل</a>
+        <a href="#" class="nav-link" onclick="showPage('settings')">الإعدادات</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HOME PAGE -->
+  <div id="home" class="page active">
+    <div class="container">
+
+      <!-- PROFILE SECTION ADDED HERE -->
+      <div class="profile-wrapper">
+        <img src="https://midomido.neocities.org/Imageme/file_00000000b0e471f4bb14b679b943d519.png" alt="MohaMmAD_WaSSouF Profile" class="profile-avatar">
+        <h2 class="profile-name">MohaMmAD_WaSSouF</h2>
+        <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 5px; font-weight: 600;">النسخة الاحترافية المخصصة</p>
+      </div>
+
+      <div class="header-section">
+        <h1>فصل <span class="gradient-text">احترافي</span> للصوت</h1>
+        <p>إفصل صوت المطرب عن الموسيقى باستخدام تقنيات الذكاء الاصطناعي المتقدمة</p>
+      </div>
+
+      <div class="main-card">
+        <div class="upload-area" id="uploadArea" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('audioFile').click()">
+          <div class="upload-icon">
+            <i class="fas fa-cloud-arrow-up"></i>
+          </div>
+          <h2 class="upload-title">اسحب أغنيتك هنا</h2>
+          <p class="upload-desc">أو انقر لاختيار ملف صوتي من جهازك</p>
+          <p style="color: #94a3b8; font-size: 0.9rem;">MP3 • WAV • FLAC • OGG (حد أقصى 500MB)</p>
+        </div>
+
+        <input type="file" id="audioFile" accept="audio/*" onchange="handleFileSelect(event)">
+
+        <div class="file-info-section" id="fileInfo">
+          <div class="file-details">
+            <div class="detail-box">
+              <div class="detail-label">اسم الملف</div>
+              <div class="detail-value" id="fileName">-</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">الحجم</div>
+              <div class="detail-value" id="fileSize">-</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">المدة</div>
+              <div class="detail-value" id="fileDuration">-</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">الجودة</div>
+              <div class="detail-value">320 kbps</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="waveform-section" id="waveformSection">
+          <div class="waveform-title">🎵 معاينة موجة الصوت</div>
+          <canvas id="waveformCanvas"></canvas>
+        </div>
+
+        <div class="settings-section" id="settingsSection">
+          <div class="settings-title">
+            <i class="fas fa-sliders"></i> إعدادات المعالجة
+          </div>
+          <div class="settings-grid">
+            <div class="setting-group">
+              <label class="setting-label">دقة المعالجة</label>
+              <select id="cfg_window" class="setting-select">
+                <option value="320">عادي - سريع</option>
+                <option value="512">متوازن - موصى به</option>
+                <option value="1024" selected="">عالي - الأفضل</option>
+              </select>
+            </div>
+            <div class="setting-group">
+              <label class="setting-label">قوة العزل (1-10)</label>
+              <input type="range" id="cfg_agg" min="1" max="10" value="5" style="width: 100%;">
+              <small style="color: var(--text-light); margin-top: 0.5rem;">القيمة الحالية: <span id="aggValue">5</span></small>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label class="setting-checkbox">
+              <input type="checkbox" id="cfg_post" checked="">
+              <span>تصفية التشويش والضوضاء</span>
+            </label>
+            <label class="setting-checkbox">
+              <input type="checkbox" id="cfg_high" checked="">
+              <span>معالجة الترددات العالية</span>
+            </label>
+            <label class="setting-checkbox">
+              <input type="checkbox" id="cfg_tta">
+              <span>تحسين الذكاء الاصطناعي (TTA)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+          <div class="progress-header">
+            <span class="progress-status" id="progressStatus">جاري المعالجة...</span>
+            <span class="progress-percent" id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="steps-container">
+            <div class="step" id="step1">
+              <div class="step-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+              <div class="step-label">الرفع</div>
+            </div>
+            <div class="step" id="step2">
+              <div class="step-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+              <div class="step-label">التحليل</div>
+            </div>
+            <div class="step" id="step3">
+              <div class="step-icon"><i class="fas fa-sliders"></i></div>
+              <div class="step-label">المعالجة</div>
+            </div>
+            <div class="step" id="step4">
+              <div class="step-icon"><i class="fas fa-check"></i></div>
+              <div class="step-label">الإنهاء</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+          <!-- Vocals -->
+          <div class="result-item vocal">
+            <div class="result-header">
+              <div class="result-icon vocal"><i class="fas fa-microphone"></i></div>
+              <div class="result-info">
+                <h3>صوت المطرب</h3>
+                <p>المسار الصوتي المعزول بنقاء عالي</p>
+              </div>
+            </div>
+            <div class="player-container">
+              <button class="play-btn" onclick="togglePlay('vocalAudio', this)">
+                <i class="fas fa-play"></i>
+              </button>
+              <div class="timeline-container">
+                <div class="time-display">
+                  <span id="vocalCurrent">0:00</span>
+                  <span id="vocalTotal">0:00</span>
+                </div>
+                <input type="range" class="timeline" id="vocalSeek" min="0" max="100" value="0" oninput="seekAudio('vocalAudio', this.value)">
+              </div>
+            </div>
+            <audio id="vocalAudio" ontimeupdate="updateProgress('vocalAudio', 'vocalSeek', 'vocalCurrent')" onloadedmetadata="setDuration('vocalAudio', 'vocalTotal')"></audio>
+            <button class="btn btn-secondary btn-sm" onclick="downloadAudio('vocalAudio', 'Vocals.wav')">
+              <i class="fas fa-download"></i> تحميل
+            </button>
+          </div>
+
+          <!-- Instrumental -->
+          <div class="result-item inst">
+            <div class="result-header">
+              <div class="result-icon inst"><i class="fas fa-music"></i></div>
+              <div class="result-info">
+                <h3>الموسيقى الخلفية</h3>
+                <p>المسار الموسيقي المعزول بشكل نظيف</p>
+              </div>
+            </div>
+            <div class="player-container">
+              <button class="play-btn" onclick="togglePlay('instAudio', this)">
+                <i class="fas fa-play"></i>
+              </button>
+              <div class="timeline-container">
+                <div class="time-display">
+                  <span id="instCurrent">0:00</span>
+                  <span id="instTotal">0:00</span>
+                </div>
+                <input type="range" class="timeline" id="instSeek" min="0" max="100" value="0" oninput="seekAudio('instAudio', this.value)">
+              </div>
+            </div>
+            <audio id="instAudio" ontimeupdate="updateProgress('instAudio', 'instSeek', 'instCurrent')" onloadedmetadata="setDuration('instAudio', 'instTotal')"></audio>
+            <button class="btn btn-secondary btn-sm" onclick="downloadAudio('instAudio', 'Instrumental.wav')">
+              <i class="fas fa-download"></i> تحميل
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="processBtn" onclick="startProcessing()" style="margin-top: 2rem;">
+          <i class="fas fa-wand-magic-sparkles"></i> بدء المعالجة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div id="history" class="page">
+    <div class="container">
+      <h1 style="margin-bottom: 2rem;">📋 سجل المعالجات</h1>
+      <div class="main-card">
+        <div id="historyList"></div>
+        <button class="btn btn-secondary" onclick="clearHistory()" style="margin-top: 1rem;">
+          <i class="fas fa-trash"></i> مسح السجل
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div id="settings" class="page">
+    <div class="container">
+      <h1 style="margin-bottom: 2rem;">⚙️ الإعدادات المتقدمة</h1>
+      <div class="main-card">
+        <div class="settings-section show">
+          <div class="settings-title">
+            <i class="fas fa-sliders"></i> إعدادات المحرك المتقدمة
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">
+            <i class="fas fa-save"></i> حفظ الإعدادات
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+
+
+
+    <script type="module" src="script.js"></script>
+
+
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>console.log('SW registered:',r.scope)).catch(e=>console.error('SW registration failed:',e));});}</script></body></html>

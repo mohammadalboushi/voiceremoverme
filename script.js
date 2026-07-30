@@ -210,7 +210,6 @@ window.startProcessing = async function() {
   }, 300);
 
   try {
-    // جلب رابط كولاب الخاص بك من فايربيس
     const configRes = await fetch("https://malaboushi-default-rtdb.firebaseio.com/colabConfig.json");
     const configData = await configRes.json();
     
@@ -218,9 +217,9 @@ window.startProcessing = async function() {
       throw new Error("لا يوجد رابط سيرفر مسجل في لوحة التحكم");
     }
 
-    const serverUrl = configData.currentUrl.trim();
+    const serverUrl = configData.currentUrl.trim().replace(/\/$/, "");
 
-    const client = await Client.connect(serverUrl);
+    const client = await Client.connect(serverUrl, { hf_token: "" });
     const result = await client.predict("/vrarch_separator", {
       audio: currentFile,
       model: "6_HP-Karaoke-UVR.pth",
@@ -241,7 +240,7 @@ window.startProcessing = async function() {
     document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
     updateProcessing(100);
 
-    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? serverUrl + (serverUrl.endsWith('/') ? '' : '/') + "file=" + i.path : ''));
+    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? serverUrl + "/file=" + i.path : ''));
     document.getElementById('instAudio').src = getUrl(result.data[0]);
     document.getElementById('vocalAudio').src = getUrl(result.data[1]);
 
@@ -255,7 +254,8 @@ window.startProcessing = async function() {
     }, 1000);
   } catch (err) {
     clearInterval(simInterval);
-    showToast('حدث خطأ بالاتصال بالسيرفر، تأكد من تشغيل كولاب.', 'error');
+    console.error(err);
+    showToast('خطأ في اتصال العميل، تأكد من أن كولاب يعمل بداخل المتصفح.', 'error');
     document.getElementById('processBtn').disabled = false;
     document.getElementById('progressSection').classList.remove('show');
   }

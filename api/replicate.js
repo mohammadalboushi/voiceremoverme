@@ -22,17 +22,17 @@ export default async function handler(req, res) {
   try {
     const token = process.env.REPLICATE_API_TOKEN;
     
-    // التعديل السحري: استخدام الرابط المباشر لأحدث إصدار من موديل Spleeter المفتوح
-    const startRes = await fetch("https://api.replicate.com/v1/models/cjwbw/spleeter/predictions", {
+    // إرسال الطلب باستخدام النسخة الرسمية الموثوقة من Replicate
+    const startRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        version: "25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953",
         input: {
-          audio: fileUrl,
-          stems: 2 
+          audio: fileUrl
         }
       })
     });
@@ -45,6 +45,7 @@ export default async function handler(req, res) {
     let prediction = await startRes.json();
     const getUrl = prediction.urls.get;
 
+    // فحص حالة المعالجة حتى تكتمل بنجاح
     while (prediction.status !== "succeeded" && prediction.status !== "failed") {
       await new Promise(resolve => setTimeout(resolve, 4000));
       const checkRes = await fetch(getUrl, {

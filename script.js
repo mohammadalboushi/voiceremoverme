@@ -1,7 +1,3 @@
-import {
-  Client
-} from "https://esm.sh/@gradio/client";
-
 let currentFile = null;
 let audioContexts = {};
 
@@ -195,54 +191,59 @@ window.startProcessing = async function() {
   document.getElementById('processBtn').disabled = true;
   document.getElementById('progressSection').classList.add('show');
   document.getElementById('resultsSection').classList.remove('show');
-  document.getElementById('progressStatus').innerText = 'جاري الاتصال بالسيرفر...';
+  document.getElementById('progressStatus').innerText = 'جاري رفع الأغنية...';
 
   let p = 0;
   let simInterval = setInterval(() => {
-    if (p < 30) {
-      p += 1.5;
-      document.getElementById('progressStatus').innerText = "جاري رفع البيانات...";
-    } else if (p < 85) {
-      p += 0.3;
-      document.getElementById('progressStatus').innerText = "جاري العزل بالذكاء الاصطناعي...";
+    if (p < 90) {
+      p += 0.5;
+      updateProcessing(Math.floor(p));
     }
-    updateProcessing(Math.floor(p));
-  }, 300);
+  }, 1000);
 
   try {
-    const configRes = await fetch("https://malaboushi-default-rtdb.firebaseio.com/colabConfig.json");
-    const configData = await configRes.json();
-    
-    if (!configData || !configData.currentUrl) {
-      throw new Error("لا يوجد رابط سيرفر مسجل في لوحة التحكم");
-    }
+    // الخطوة 1: رفع الملف لتخزين مؤقت
+    const formData = new FormData();
+    formData.append('file', currentFile);
 
-    const serverUrl = configData.currentUrl.trim().replace(/\/$/, "");
-
-    const client = await Client.connect(serverUrl, { hf_token: "" });
-    const result = await client.predict("/vrarch_separator", {
-      audio: currentFile,
-      model: "6_HP-Karaoke-UVR.pth",
-      out_format: "wav",
-      window_size: parseInt(document.getElementById('cfg_window').value),
-      aggression: parseInt(document.getElementById('cfg_agg').value),
-      tta: document.getElementById('cfg_tta').checked,
-      post_process: document.getElementById('cfg_post').checked,
-      post_process_threshold: 0.1,
-      high_end_process: document.getElementById('cfg_high').checked,
-      batch_size: 1,
-      norm_thresh: 0.1,
-      amp_thresh: 0.1,
-      single_stem: "(None)"
+    const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', {
+      method: 'POST',
+      body: formData
     });
 
+    if (!uploadRes.ok) {
+        throw new Error("فشل رفع الملف. تأكد من جودة اتصالك بالإنترنت.");
+    }
+    
+    const uploadData = await uploadRes.json();
+    const fileUrl = uploadData.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/"); 
+    
+    document.getElementById('progressStatus').innerText = "جاري العزل في السيرفر الخاص بك... (قد يستغرق 3-5 دقائق)";
+
+    // الخطوة 2: الاتصال بالسيرفر الخلفي النظيف الخاص بك (Vercel Backend)
+    const startRes = await fetch('/api/replicate', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ fileUrl: fileUrl })
+    });
+
+    if (!startRes.ok) {
+        const errData = await startRes.json();
+        throw new Error(errData.error || "حدث خطأ في السيرفر الخلفي");
+    }
+
+    const prediction = await startRes.json();
+    
     clearInterval(simInterval);
     document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
     updateProcessing(100);
 
-    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? serverUrl + "/file=" + i.path : ''));
-    document.getElementById('instAudio').src = getUrl(result.data[0]);
-    document.getElementById('vocalAudio').src = getUrl(result.data[1]);
+    // الخطوة 3: عرض النتائج
+    const results = prediction.output;
+    document.getElementById('vocalAudio').src = results.vocals || (Array.isArray(results) ? results[0] : '');
+    document.getElementById('instAudio').src = results.accompaniment || (Array.isArray(results) ? results[1] : '');
 
     saveToHistory(currentFile.name);
 
@@ -252,10 +253,11 @@ window.startProcessing = async function() {
       document.getElementById('processBtn').disabled = false;
       showToast('✨ تم الفصل بنجاح!', 'success');
     }, 1000);
+
   } catch (err) {
     clearInterval(simInterval);
     console.error(err);
-    showToast('خطأ في اتصال العميل، تأكد من أن كولاب يعمل بداخل المتصفح.', 'error');
+    showToast('خطأ: ' + err.message, 'error');
     document.getElementById('processBtn').disabled = false;
     document.getElementById('progressSection').classList.remove('show');
   }

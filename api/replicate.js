@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   try {
     const token = process.env.REPLICATE_API_TOKEN;
     
-    // إرسال الطلب باستخدام النسخة الرسمية الموثوقة من Replicate
+    // إرسال الطلب باستخدام النسخة الرسمية والمستقرة لموديل Demucs
     const startRes = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     let prediction = await startRes.json();
     const getUrl = prediction.urls.get;
 
-    // فحص حالة المعالجة حتى تكتمل بنجاح
+    // تتبع حالة المعالجة حتى تكتمل بنجاح
     while (prediction.status !== "succeeded" && prediction.status !== "failed") {
       await new Promise(resolve => setTimeout(resolve, 4000));
       const checkRes = await fetch(getUrl, {
@@ -61,7 +61,14 @@ export default async function handler(req, res) {
        return res.status(500).json({ error: "فشلت عملية العزل داخل Replicate" });
     }
 
-    return res.status(200).json({ output: prediction.output });
+    // مطابقة مخرجات Demucs مع ما يتوقعه ملف script.js (vocals و accompaniment)
+    const rawOutput = prediction.output;
+    const formattedOutput = {
+      vocals: rawOutput.vocals || '',
+      accompaniment: rawOutput.other || rawOutput.accompaniment || ''
+    };
+
+    return res.status(200).json({ output: formattedOutput });
 
   } catch (error) {
     return res.status(500).json({ error: error.message });

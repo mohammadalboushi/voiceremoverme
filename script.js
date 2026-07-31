@@ -1,3 +1,7 @@
+import {
+  Client
+} from "https://esm.sh/@gradio/client";
+
 let currentFile = null;
 let audioContexts = {};
 
@@ -156,94 +160,95 @@ window.formatTime = function(sec) {
   return Math.floor(sec / 60) + ':' + Math.floor(sec % 60).toString().padStart(2, '0');
 }
 
-window.downloadAudio = async function(id, name) {
+window.downloadAudio = function(id, name) {
   const url = document.getElementById(id).src;
   if (!url) return showToast('لا يوجد ملف متاح', 'error');
-  showToast('بدأ التنزيل...', 'success');
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Network error');
-
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-  } catch (e) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
+  
+  showToast('جاري بدء التنزيل... تابع تقدم التحميل في إشعارات جوالك', 'success');
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 window.startProcessing = async function() {
   if (!currentFile) return showToast('اختر ملف صوتي أولاً', 'warning');
+  
+  const savedToken = localStorage.getItem('hf_token');
+  if (!savedToken) {
+    showToast('يرجى وضع توكن Hugging Face في صفحة الإعدادات أولاً', 'error');
+    showPage('settings');
+    return;
+  }
 
   document.getElementById('processBtn').disabled = true;
   document.getElementById('progressSection').classList.add('show');
   document.getElementById('resultsSection').classList.remove('show');
-  document.getElementById('progressStatus').innerText = 'جاري رفع الأغنية...';
+  document.getElementById('progressStatus').innerText = 'جاري الاتصال ورفع الملف...';
 
   let p = 0;
   let simInterval = setInterval(() => {
-    if (p < 90) {
-      p += 0.5;
-      updateProcessing(Math.floor(p));
+    if (p < 30) {
+      p += 1.5;
+      document.getElementById('progressStatus').innerText = "جاري رفع البيانات...";
+    } else if (p < 85) {
+      p += 0.3;
+      document.getElementById('progressStatus').innerText = "جاري العزل بالذكاء الاصطناعي...";
     }
-  }, 1000);
+    updateProcessing(Math.floor(p));
+  }, 300);
 
   try {
-    // الخطوة 1: رفع الملف لتخزين مؤقت
-    const formData = new FormData();
-    formData.append('file', currentFile);
-
-    const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', {
-      method: 'POST',
-      body: formData
+    const client = await Client.connect("TheStinger/UVR5_UI", { hf_token: savedToken });
+    const result = await client.predict("/vrarch_separator", {
+      audio: currentFile,
+      model: "6_HP-Karaoke-UVR.pth",
+      out_format: "wav",
+      window_size: parseInt(document.getElementById('cfg_window').value),
+      aggression: parseInt(document.getElementById('cfg_agg').value),
+      tta: document.getElementById('cfg_tta').checked,
+      post_process: document.getElementById('cfg_post').checked,
+      post_process_threshold: 0.1,
+      high_end_process: document.getElementById('cfg_high').checked,
+      batch_size: 1,
+      norm_thresh: 0.1,
+      amp_thresh: 0.1,
+      single_stem: "(None)"
     });
 
-    if (!uploadRes.ok) {
-        throw new Error("فشل رفع الملف. تأكد من جودة اتصالك بالإنترنت.");
-    }
-    
-    const uploadData = await uploadRes.json();
-    const fileUrl = uploadData.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/"); 
-    
-    document.getElementById('progressStatus').innerText = "جاري العزل في السيرفر الخاص بك... (قد يستغرق 3-5 دقائق)";
-
-    // الخطوة 2: الاتصال بالسيرفر الخلفي النظيف الخاص بك (Vercel Backend)
-    const startRes = await fetch('/api/replicate', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ fileUrl: fileUrl })
-    });
-
-    if (!startRes.ok) {
-        const errData = await startRes.json();
-        throw new Error(errData.error || "حدث خطأ في السيرفر الخلفي");
-    }
-
-    const prediction = await startRes.json();
-    
     clearInterval(simInterval);
-    document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
-    updateProcessing(100);
+    document.getElementById('progressStatus').innerText = 'تم العزل! جاري تحميل الصوتيات للمتصفح...';
+    updateProcessing(90);
 
-    // الخطوة 3: عرض النتائج
-    const results = prediction.output;
-    document.getElementById('vocalAudio').src = results.vocals || (Array.isArray(results) ? results[0] : '');
-    document.getElementById('instAudio').src = results.accompaniment || (Array.isArray(results) ? results[1] : '');
+    const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? "https://thestinger-uvr5-ui.hf.space/file=" + i.path : ''));
+    
+    // السحب المباشر والسريع بدون تضخيم
+    const fetchWithAuth = async (url) => {
+      if (!url) return '';
+      try {
+        const res = await fetch(url, { headers: { "Authorization": `Bearer ${savedToken}` } });
+        // إذا فشل الطلب، منرجع قيمة فاضية بدل الرابط عشان المتصفح ما يحمل صفحة HTML
+        if (!res.ok) return ''; 
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      } catch (e) {
+        return '';
+      }
+    };
+
+    // هون السر: طلبنا الملفات بالترتيب (واحد ورا التاني) عشان السيرفر ما يعمل بلوك للطلب التاني
+    const instBlob = await fetchWithAuth(getUrl(result.data[0]));
+    const vocalBlob = await fetchWithAuth(getUrl(result.data[1]));
+
+    document.getElementById('instAudio').src = instBlob;
+    document.getElementById('vocalAudio').src = vocalBlob;
+
+    updateProcessing(100);
+    document.getElementById('progressStatus').innerText = 'تمت المعالجة بنجاح!';
 
     saveToHistory(currentFile.name);
 
@@ -253,11 +258,10 @@ window.startProcessing = async function() {
       document.getElementById('processBtn').disabled = false;
       showToast('✨ تم الفصل بنجاح!', 'success');
     }, 1000);
-
   } catch (err) {
     clearInterval(simInterval);
     console.error(err);
-    showToast('خطأ: ' + err.message, 'error');
+    showToast('حدث خطأ! تأكد من صحة التوكن في الإعدادات.', 'error');
     document.getElementById('processBtn').disabled = false;
     document.getElementById('progressSection').classList.remove('show');
   }
@@ -328,8 +332,14 @@ window.clearHistory = function() {
 }
 
 window.saveSettings = function() {
+  const token = document.getElementById('hf_token_input').value;
+  if (token) {
+    localStorage.setItem('hf_token', token.trim());
+  }
   showToast('✅ تم حفظ الإعدادات', 'success');
 }
+
+document.getElementById('hf_token_input').value = localStorage.getItem('hf_token') || '';
 
 loadHistory();
 showToast('👋 مرحباً بك في Voice Studio', 'success');

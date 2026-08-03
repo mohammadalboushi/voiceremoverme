@@ -211,18 +211,26 @@ window.startProcessing = async function() {
       window_size: parseInt(document.getElementById('cfg_window').value),
       aggression: parseInt(document.getElementById('cfg_agg').value),
       tta: document.getElementById('cfg_tta').checked,
-      post_process: document.getElementById('cfg_post').checked,
-      post_process_threshold: 0.1,
+            post_process: document.getElementById('cfg_post').checked,
+      post_process_threshold: 0.2,
       high_end_process: document.getElementById('cfg_high').checked,
       batch_size: 1,
-      norm_thresh: 0.1,
-      amp_thresh: 0.1,
+      norm_thresh: 0.9,
+      amp_thresh: 1.0,
       single_stem: "(None)"
     });
 
     clearInterval(simInterval);
     document.getElementById('progressStatus').innerText = 'تم العزل! جاري تحميل الصوتيات للمتصفح...';
     updateProcessing(90);
+
+    let downloadP = 90;
+    let downloadInterval = setInterval(() => {
+      if (downloadP < 99) {
+        downloadP += 0.5;
+        updateProcessing(Math.floor(downloadP));
+      }
+    }, 800);
 
     const getUrl = (i) => typeof i === 'string' ? i : (i?.url || (i?.path ? "https://thestinger-uvr5-ui.hf.space/file=" + i.path : ''));
     
@@ -243,6 +251,8 @@ window.startProcessing = async function() {
     // هون السر: طلبنا الملفات بالترتيب (واحد ورا التاني) عشان السيرفر ما يعمل بلوك للطلب التاني
     const instBlob = await fetchWithAuth(getUrl(result.data[0]));
     const vocalBlob = await fetchWithAuth(getUrl(result.data[1]));
+
+    clearInterval(downloadInterval);
 
     document.getElementById('instAudio').src = instBlob;
     document.getElementById('vocalAudio').src = vocalBlob;
